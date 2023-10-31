@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def insert_product(id, name, content, tablename = 'product'):
-    return f"INSERT INTO {tablename}(id, name, content) VALUES ({id}, '{name}' '{content}');"
+    return f"INSERT INTO {tablename}(id, name, content) VALUES ({id}, '{name}', '{content}');"
 
 def create_table(tablename):
     conn = psycopg2.connect(
@@ -43,9 +43,9 @@ def insert_products(tablename = 'product'):
     # N = 44425
     df = pd.read_csv('./BD2P2/definitivo.csv')
     for _, row in df.iterrows():
-        id = row[1]
-        name = str(row[-2]).lower()
-        content = ' '.join(map(lambda x: str(x).lower(), list(row[2:-2])))
+        id = row.iloc[1]
+        name = str(row.iloc[-2]).lower().replace('\'', '')
+        content = ' '.join(map(lambda x: str(x).lower(), list(row.iloc[2:-2]))).replace('\'', '')
         insert = insert_product(id, name, content, tablename)
         cursor.execute(insert)
 
@@ -75,6 +75,6 @@ def create_index(tablename='product'):
     cursor.close()
     conn.close()
 
-create_table('product')
-insert_products('product')
+#create_table('product')
+#insert_products('product')
 create_index('product')
