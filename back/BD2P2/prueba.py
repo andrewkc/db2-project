@@ -51,7 +51,7 @@ class InvertIndex:
                 if sys.getsizeof(dictTerms) > self.BLOCK_LIMIT:
                     sorted_block = sorted(dictTerms.items(), key=itemgetter(0))
                     block_name = "bloque-"+str(block_n)+".txt"
-                    with open("C:/Users/diego/DataspellProjects/BD2P2/bloques/" + block_name, "w") as file_part:
+                    with open("./bloques/" + block_name, "w") as file_part:
                         json.dump(sorted_block, file_part, indent=2)
                     sorted_block = {} #clear
                     block_n += 1
@@ -61,12 +61,12 @@ class InvertIndex:
         if dictTerms:
             sorted_block = sorted(dictTerms.items(), key=itemgetter(0))
             block_name = "bloque-"+str(block_n)+".txt"
-            with open("C:/Users/diego/DataspellProjects/BD2P2/bloques/" + block_name, "w") as file_part:
+            with open("./bloques/" + block_name, "w") as file_part:
                 json.dump(sorted_block, file_part, indent=2)
             dictTerms = defaultdict(list)
 
     def listFiles(self):
-        filepaths = "C:/Users/diego/DataspellProjects/BD2P2/bloques/"
+        filepaths = "./bloques/"
         files = []
 
         for file_name in os.listdir(filepaths):

@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from BD2P2.prueba import InvertIndex
 from os import getenv
 import psycopg2
-import uvicorn
 
 app = FastAPI()
 
@@ -22,7 +22,7 @@ async def root():
     return "Hello from FastAPI"
 
 
-@app.post('get_data_from_postgres')
+@app.post('/get_data_from_postgres')
 async def get_top_k_postgres(data):
     try:
         query = data.get('query')
@@ -54,14 +54,34 @@ async def get_top_k_postgres(data):
         return JSONResponse(content=e.response["Error"], status_code=500)
 
 
-@app.post('get_data_from_invidx')
-async def get_top_k_invidx():
+@app.post('/get_data_from_invidx')
+async def get_top_k_invidx(data):
     try:
-        response = None
-        return {'content': response, 'status_code':200}
+        inverted_index = InvertIndex(
+            index_file="./BD2P2/your_index_file.txt", 
+            abstracts_por_bloque=10000, 
+            dataFile="./BD2P2/definitivo.csv")
+
+        query = data.get('query')
+        k = int(data.get('k')) if data.get('k') != '' else 5
+
+        matching_indices = inverted_index.retrieve_k_nearest(query, k)
+        return {'content': matching_indices, 'status_code':200}
     except Exception as e:
         return JSONResponse(content=e.response["Error"], status_code=500)
 
 
-if __name__ == '__main__':
-    uvicorn.run('main:app', host='0.0.0.0', reload=True)
+@app.post('/create_index')
+async def create_index():
+    try:
+        inverted_index = InvertIndex(
+            index_file="./BD2P2/your_index_file.txt", 
+            abstracts_por_bloque=10000, 
+            dataFile="./BD2P2/definitivo.csv")
+        
+        inverted_index.SPIMIConstruction()
+        index = inverted_index.index_blocks()
+        inverted_index.write_index_tf_idf(index, len(index))
+        return {'response': 200}
+    except Exception as e:
+        return JSONResponse(content=e.response["Error"], status_code=500)
