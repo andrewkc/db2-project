@@ -39,7 +39,7 @@ async def get_top_k_postgres(data):
         cursor = conn.cursor()
 
         sentence = f"""
-                SELECT id, content, ts_rank(indexed, query) rank
+                SELECT id, name, content, ts_rank(indexed, query) rank
                 FROM product, plainto_tsquery('english', '{query}') query
                 ORDER BY rank DESC LIMIT {k};
                 """
