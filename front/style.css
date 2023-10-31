@@ -1,0 +1,101 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.mac-frame {
+    width: 600px;
+    background-color: #eee;
+    padding: 20px;
+    border: 5px solid #000;
+    border-radius: 8px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.mac-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 20px;
+    margin-bottom: 20px;
+}
+
+.mac-close, .mac-minimize, .mac-expand {
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    border-radius: 50%;
+}
+
+.mac-close {
+    background-color: #FF5F56;
+}
+
+.mac-minimize {
+    background-color: #FFBD2E;
+}
+
+.mac-expand {
+    background-color: #27C93F;
+}
+
+h1, h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #000;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #000;
+    background-color: #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #aaa;
+    border: 2px solid #000;
+    border-radius: 4px;
+    color: #000;
+    cursor: pointer;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #888;
+}
+
+.secondary-button {
+    background-color: #ddd;
+}
+
+.secondary-button:hover {
+    background-color: #ccc;
+}
+
+.result {
+    margin-top: 20px;
+    color: #000;
+}
+
+.result pre {
+    background-color: #eee;
+    padding: 10px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    overflow-x: auto;
+}

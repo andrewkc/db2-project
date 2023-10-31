@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+    <title>Consulta de Base de Datos</title>
+</head>
+
+<body>
+    <div class="mac-frame">
+        <div class="mac-header">
+            <div class="mac-close"></div>
+            <div class="mac-minimize"></div>
+            <div class="mac-expand"></div>
+        </div>
+
+        <h1>Búsqueda</h1>
+        <div class="input-group">
+            <input type="text" id="queryInput" placeholder="Ingresa tu consulta...">
+        </div>
+        
+        <div class="input-group">
+            <select id="methodSelector">
+                <option value="/get_data_from_postgres">Búsqueda en Postgres</option>
+                <option value="/get_data_from_invidx">Búsqueda con Índice Invertido</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <input type="number" id="kInput" placeholder="Número de resultados (k)" value="5">
+        </div>
+
+        <button onclick="fetchData()">Ejecutar Consulta</button>
+        <button onclick="createIndex()" class="secondary-button">Crear Índice</button>
+
+        <div class="result">
+            <h2>Resultados:</h2>
+            <pre id="data"></pre>
+        </div>
+    </div>
+</body>
+</html>
