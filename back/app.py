@@ -16,6 +16,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+def create_index():  
+    global index 
+    index = InvertIndex(index_file="spimi.txt")
+    index.prueba()
+
 # Endpoints
 
 @app.post('/')
@@ -86,13 +92,4 @@ async def top_k_invidx(data: dict):
     except Exception as e:
         return JSONResponse(content=str(e), status_code=500)
 
-
-@app.post('/create_index')
-async def create_index():
-    try:   
-        global index 
-        index = InvertIndex(index_file="spimi.txt")
-        index.prueba()
-        return {'response': 200}
-    except Exception as e:
-        return JSONResponse(content=str(e), status_code=500)
+create_index()
