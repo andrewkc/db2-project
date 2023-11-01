@@ -8,29 +8,33 @@ import numpy as np
 import nltk
 from nltk.stem.snowball import SnowballStemmer
 import os
+import time
 
 stemmer = SnowballStemmer('english')
 nltk.download('punkt')
 
 
-def compute_tf(collection):
-    doc_tf = {}
-    total_tf = {}
-    for doc_id, doc in enumerate(collection):
-        doc_term_freq = {}
-        for term in doc:
-            if term in doc_term_freq:
-                doc_term_freq[term] += 1
-                total_tf[term] += 1
+def compute_term_frequency(collection):
+    document_term_frequencies = {}
+    total_term_frequencies = {}
+
+    for document_id, document in enumerate(collection):
+        term_frequencies = {}
+
+        for term in document:
+            if term in term_frequencies:
+                term_frequencies[term] += 1
+
+            if term in total_term_frequencies:
+                total_term_frequencies[term] += 1
             else:
-                if term not in total_tf:
-                    total_tf[term] = 1
-                doc_term_freq[term] = 1
+                total_term_frequencies[term] = 1
 
-        doc_tf[doc_id] = doc_term_freq
+        document_term_frequencies[document_id] = term_frequencies
 
-    total_tf = sorted(total_tf.items(), key= lambda tup: tup[1], reverse=True)
-    return doc_tf, total_tf
+    sorted_total_term_frequencies = sorted(total_term_frequencies.items(), key=lambda item: item[1], reverse=True)
+
+    return document_term_frequencies, sorted_total_term_frequencies
 
 def compute_idf(term, idf_freq, term_freq, N):
     if term in idf_freq: #si ya existe para term
@@ -62,7 +66,7 @@ def compute_tfidf(data, collection):
     index = {} #para tener
     length = {} #para tener vector normalizado de cada abstract
 
-    term_freq, orden_keywords = compute_tf(collection) # Contar la frecuencia de cada término en cada documento
+    term_freq, orden_keywords = compute_term_frequency(collection) # Contar la frecuencia de cada término en cada documento
 
     for doc_id, doc in enumerate(collection):
         nameDoc = str(data.iloc[int(doc_id),0])
@@ -113,25 +117,17 @@ def tokenizar(texto):
     tokenText = nltk.Text(tokens).tokens
     return tokenText
 
-def eliminarStopWords(tokenText): #elegir stopwords
+def eliminarStopWords(tokenText):
     print(os.getcwd())
     customSW = open(os.path.join(os.path.dirname(__file__), 'stop_words_spanish.txt'), 'r')
     palabras_stoplist = customSW.read()
     customSW.close()
     palabras_stoplist = nltk.word_tokenize(palabras_stoplist.lower())
-    stoplist = ["0","1","2","3","4","5","6","7","8","9","_","--", "\\",
-                "^",">",'.',"@","=","$" , '?', '[', ']', '¿',"(",")",
-                '-', '!',"<", '\'',',', ":","``","''", ";", "»", '(-)',
-                "+","0","/", "«", "{", "}", "--", "|","`","~","#","&","%"," "]
-    palabras_stoplist += stoplist
-
-    #Lexemas
     resultado = [stemmer.stem(token) for token in tokenText if (token not in palabras_stoplist)]
-
     lstTokens = []
     for token in resultado:
         bandera = False
-        for word in stoplist:
+        for word in palabras_stoplist:
             if word in token:
                 bandera = True
                 break
@@ -155,7 +151,7 @@ blocks_dir = os.path.join(base_dir, "bloques")
 ZERO_TRESHOLD = 0.000001
 
 class InvertIndex:
-    def __init__(self, index_file, abstracts_por_bloque=12000, dataFile=""):
+    def __init__(self, index_file, abstracts_por_bloque=10000, dataFile=""):
         self.index_file = index_file
         self.index = {}
         self.idf = {}
@@ -328,21 +324,16 @@ class InvertIndex:
         return None
 
     def retrieve_k_nearest(self, query, k):
+        start_time = time.time()
         data = self.loadData()
-
         query = preprocesar_textos(query)
-
         index_data = self.load_Index()
-
-        #print("query keywords ", query)
-
         cos_to_evaluar = defaultdict(dict)
         idf_query=defaultdict(float)
         query_tfidf = []
 
         for term in query:
             term_data = self.binary_search(term, index_data)
-            #term_data = self.loop(term, index_data) #posting list
             if term_data is None:
                 continue
 
@@ -375,16 +366,17 @@ class InvertIndex:
         scores = scores[:k]
 
         temp = []
-        scores_values = []
         for result in scores:
             temp.append(result[0])
-            scores_values.append(result[1])
 
 
         # INDICES para hallar en el dataframe
         matching_indices = data.loc[data["id"].isin(temp)].index
+        end_time = time.time()
 
-        return matching_indices, scores_values
+        execution_time = end_time - start_time
+
+        return matching_indices, execution_time
 
     #PRUEBAS
 
@@ -396,13 +388,13 @@ class InvertIndex:
 
     def prueba2(self):
         k = 5
-        results = self.retrieve_k_nearest("I need shoes white for men", k)
+        results,respuesta = self.retrieve_k_nearest("I need shoes blue for men", k)
         data = self.loadData()
-        return data.iloc[results]
+        return data.iloc[results], respuesta
 
 
 
-#index = InvertIndex(index_file="spimi.txt")
-#index.prueba()
-#results = index.prueba2()
-#print(results)
+index = InvertIndex(index_file="spimi.txt")
+index.prueba()
+results,tiempo = index.prueba2()
+print(results, tiempo)
