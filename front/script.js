@@ -25,6 +25,32 @@ window.addEventListener('load', () => {
 
 const BASE_URL = "http://127.0.0.1:8000";
 
+
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("btn").addEventListener("click", async function() {
+        let query = document.getElementById("query").value;
+        let k = document.getElementById("k").value;
+
+        let res = await fetch(`/api/search?query=${query}&k=${k}`);
+        let data = await res.json();
+
+        document.getElementById("execution-time").innerText = `${data.execution_time}`;  // Aquí es donde se actualiza el tiempo de ejecución
+
+        let resultHTML = '';
+        for (const item of data.content) {
+            resultHTML += `
+                <div class="result-item">
+                    <span>ID: ${item[0]}</span>
+                    <span>Descripción: ${item[1]}</span>
+                    <span>Categoría: ${item[2]}</span>
+                    <span>Puntuación: ${item[3]}</span>
+                </div>
+            `;
+        }
+        document.getElementById("result-box").innerHTML = resultHTML;
+    });
+});
+
 async function fetchData() {
     const query = document.getElementById('queryInput').value;
     const k = parseInt(document.getElementById('kInput').value);
@@ -52,27 +78,45 @@ async function fetchData() {
 
         if (response.ok) {
             const data = await response.json();
+
+            // Control de visibilidad para el tiempo de ejecución
+            const executionTimeContainer = document.getElementById("execution-time-container");
+            if (data.execution_time) {
+                executionTimeContainer.style.display = "block";
+                executionTimeContainer.innerText = `Tiempo de ejecución: ${data.execution_time}`;
+            } else {
+                executionTimeContainer.style.display = "none";
+            }
+
+            // Control de visibilidad para el contenedor de resultados
             const resultContainer = document.getElementById('resultContainer');
-            resultContainer.innerHTML = '';
+            if (data.content && data.content.length > 0) {
+                resultContainer.style.display = "block";
+                resultContainer.innerHTML = '';
 
-            data.content.forEach(([id, name, content, rank]) => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'result-item';
+                data.content.forEach(([id, name, content, rank]) => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
 
-                const contentElement = document.createElement('p');
-                contentElement.textContent = `Contenido: ${content}`;
-                resultItem.appendChild(contentElement);
+                    const contentElement = document.createElement('p');
+                    contentElement.textContent = `Contenido: ${content}`;
+                    resultItem.appendChild(contentElement);
 
-                if (imageMap[id]) {
-                    const imageElement = document.createElement('img');
-                    imageElement.src = imageMap[id];
-                    imageElement.alt = `Imagen para ID ${id}`;
-                    imageElement.width = 100; // o cualquier otro tamaño que prefieras
-                    resultItem.appendChild(imageElement);
-                }
+                    if (imageMap[id]) {
+                        const imageElement = document.createElement('img');
+                        imageElement.src = imageMap[id];
+                        imageElement.alt = `Imagen para ID ${id}`;
+                        imageElement.width = 100; // o cualquier otro tamaño que prefieras
+                        resultItem.appendChild(imageElement);
+                    }
 
-                resultContainer.appendChild(resultItem);
-            });
+                    resultContainer.appendChild(resultItem);
+                });
+
+            } else {
+                resultContainer.style.display = "none";
+            }
+
         } else {
             alert('Error al realizar la consulta');
         }

@@ -107,3 +107,11 @@ button:hover {
     max-height: 400px;
     overflow-y: auto;
 }
+
+#execution-time-box {
+    background-color: #f9f9f9;
+    padding: 10px;
+    margin-top: 20px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+}
