@@ -29,7 +29,7 @@ def create_table(tablename):
     cursor.close()
     conn.close()
 
-def insert_products(n,tablename = 'product'):
+def insert_products(n, tablename = 'product'):
     conn = psycopg2.connect(
         host=getenv("HOST"),
         port=getenv("PORT"),
@@ -79,5 +79,5 @@ def create_index(tablename='product'):
     conn.close()
 
 create_table('product')
-insert_products('product')
+insert_products(44424, 'product')
 create_index('product')
