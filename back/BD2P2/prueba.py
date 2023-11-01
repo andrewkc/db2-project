@@ -115,7 +115,7 @@ def tokenizar(texto):
 
 def eliminarStopWords(tokenText): #elegir stopwords
     print(os.getcwd())
-    customSW = open('stop_words_spanish.txt','r')
+    customSW = open(os.path.join(os.path.dirname(__file__), 'stop_words_spanish.txt'), 'r')
     palabras_stoplist = customSW.read()
     customSW.close()
     palabras_stoplist = nltk.word_tokenize(palabras_stoplist.lower())
