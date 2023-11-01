@@ -1,29 +1,169 @@
-from BD2P2.preprocesamiento import *
-from BD2P2.tfidf import *
 import pandas as pd
-
 import sys
-import ast
-import re
 import json
-
-import os
 from operator import itemgetter
 from collections import OrderedDict, defaultdict
 import math
 import numpy as np
+import nltk
+from nltk.stem.snowball import SnowballStemmer
+import os
 
+stemmer = SnowballStemmer('english')
+nltk.download('punkt')
+
+
+def compute_tf(collection):
+    doc_tf = {}
+    total_tf = {}
+    for doc_id, doc in enumerate(collection):
+        doc_term_freq = {}
+        for term in doc:
+            if term in doc_term_freq:
+                doc_term_freq[term] += 1
+                total_tf[term] += 1
+            else:
+                if term not in total_tf:
+                    total_tf[term] = 1
+                doc_term_freq[term] = 1
+
+        doc_tf[doc_id] = doc_term_freq
+
+    total_tf = sorted(total_tf.items(), key= lambda tup: tup[1], reverse=True)
+    return doc_tf, total_tf
+
+def compute_idf(term, idf_freq, term_freq, N):
+    if term in idf_freq: #si ya existe para term
+        idf = idf_freq[term]
+    else:
+        df = 0 #en cuantos docs aparece term
+        for num in range(N):
+            if term in term_freq[num]:
+                df += 1
+        if df == 0:
+            idf = 0
+        else:
+            idf = np.log10((N / df))
+        idf_freq[term] = idf
+    return idf
+
+#Para querys
+def calculate_tf(query, document):
+    term_frequency = document.count(query)
+    return (1+math.log10(term_frequency))
+
+def calculate_idf(query, documents):
+    document_frequency = sum(1 for document in documents if query in document)
+    return math.log(len(documents) / (document_frequency + 1))
+
+def compute_tfidf(data, collection):
+    tfidf = {} #para tener score tfidf
+    idf_freq = {} #se va updateando cada vez que se saque idf de una palabra, para no recalcular
+    index = {} #para tener
+    length = {} #para tener vector normalizado de cada abstract
+
+    term_freq, orden_keywords = compute_tf(collection) # Contar la frecuencia de cada término en cada documento
+
+    for doc_id, doc in enumerate(collection):
+        nameDoc = str(data.iloc[int(doc_id),0])
+        smoothed_tf = []
+
+        for tup_term in orden_keywords:
+            term = tup_term[0]
+            #compute index
+            if term in term_freq[doc_id]:
+                tf_t_d = term_freq[doc_id][term]
+                if term_freq[doc_id][term] != 0:
+                    if term in index:
+                        index[term].append((nameDoc, tf_t_d))
+                    else:
+                        index[term] = [(nameDoc, tf_t_d)]
+                #Term Frequency + Smoothing
+                tf = np.log10(tf_t_d +1)
+                idf = compute_idf(term, idf_freq, term_freq, len(collection))
+                smoothed_tf.append(round(tf * idf, 3))
+            else:
+                smoothed_tf.append(0)
+
+        #compute length
+        array = np.array(list(smoothed_tf))
+        length[nameDoc] = np.linalg.norm(array)
+        tfidf[nameDoc] = smoothed_tf
+
+    #create_inverted_index(tfidf) esto no es el inverted index
+
+    return length, idf_freq, index
+
+def idf(doc_freq, n_docs):
+    N = n_docs
+    df = doc_freq
+    return round(math.log10((N/df)+1),4)
+
+def tf_idf(freq, doc_freq, n_docs):
+    if doc_freq == 0: #si aparece
+        return 0
+    tf = 1+math.log10(freq)
+    idf_ = idf(doc_freq, n_docs)
+
+    return round(tf*idf_,4)
+
+def tokenizar(texto):
+    texto = texto
+    tokens = nltk.word_tokenize(texto)
+    tokenText = nltk.Text(tokens).tokens
+    return tokenText
+
+def eliminarStopWords(tokenText): #elegir stopwords
+    print(os.getcwd())
+    customSW = open('stop_words_spanish.txt','r')
+    palabras_stoplist = customSW.read()
+    customSW.close()
+    palabras_stoplist = nltk.word_tokenize(palabras_stoplist.lower())
+    stoplist = ["0","1","2","3","4","5","6","7","8","9","_","--", "\\",
+                "^",">",'.',"@","=","$" , '?', '[', ']', '¿',"(",")",
+                '-', '!',"<", '\'',',', ":","``","''", ";", "»", '(-)',
+                "+","0","/", "«", "{", "}", "--", "|","`","~","#","&","%"," "]
+    palabras_stoplist += stoplist
+
+    #Lexemas
+    resultado = [stemmer.stem(token) for token in tokenText if (token not in palabras_stoplist)]
+
+    lstTokens = []
+    for token in resultado:
+        bandera = False
+        for word in stoplist:
+            if word in token:
+                bandera = True
+                break
+        if bandera == False:
+            lstTokens.append(token)
+
+    return lstTokens
+
+def preprocesar_textos(texto):
+    tokenText = tokenizar(texto.lower())
+    tokensLst = eliminarStopWords(tokenText)
+
+    return tokensLst
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(base_dir, "definitivo.csv")
+path_index = os.path.join(base_dir, "spimi.txt")
+blocks_dir = os.path.join(base_dir, "bloques")
+
+
+ZERO_TRESHOLD = 0.000001
 
 class InvertIndex:
-    def __init__(self, index_file, abstracts_por_bloque=10000, dataFile=""):
+    def __init__(self, index_file, abstracts_por_bloque=12000, dataFile=""):
         self.index_file = index_file
         self.index = {}
         self.idf = {}
         self.length = {}
         self.BLOCK_LIMIT = abstracts_por_bloque
         self.lista_de_bloques = []
-        self.data_path = "definitivo.csv" #data.csv
-        self.path_index = "spimi.txt"
+        self.data_path = data_path  # Updated data path
+        self.path_index = path_index  # Updated path to index file
 
 
     def loadData(self):
@@ -51,7 +191,8 @@ class InvertIndex:
                 if sys.getsizeof(dictTerms) > self.BLOCK_LIMIT:
                     sorted_block = sorted(dictTerms.items(), key=itemgetter(0))
                     block_name = "bloque-"+str(block_n)+".txt"
-                    with open("./bloques/" + block_name, "w") as file_part:
+                    block_path = os.path.join(blocks_dir, block_name)
+                    with open(block_path, "w") as file_part:
                         json.dump(sorted_block, file_part, indent=2)
                     sorted_block = {} #clear
                     block_n += 1
@@ -61,12 +202,13 @@ class InvertIndex:
         if dictTerms:
             sorted_block = sorted(dictTerms.items(), key=itemgetter(0))
             block_name = "bloque-"+str(block_n)+".txt"
-            with open("./bloques/" + block_name, "w") as file_part:
+            block_path = os.path.join(blocks_dir, block_name)
+            with open(block_path, "w") as file_part:
                 json.dump(sorted_block, file_part, indent=2)
             dictTerms = defaultdict(list)
 
     def listFiles(self):
-        filepaths = "./bloques/"
+        filepaths = blocks_dir
         files = []
 
         for file_name in os.listdir(filepaths):
@@ -251,27 +393,15 @@ class InvertIndex:
         self.write_index_tf_idf(merge_final, len(merge_final))
 
     def prueba2(self):
-        k = 3
-        results = self.retrieve_k_nearest("Quantum Theory of Integrals by Reimann", k)
+        k = 5
+        results = self.retrieve_k_nearest("I need shoes white for men", k)
         data = self.loadData()
-        return data.iloc[results] #rows con los resultados para la data
+        return data.iloc[results]
 
 
-# Crear una instancia de la clase InvertIndex
-inverted_index = InvertIndex(index_file="your_index_file.txt", abstracts_por_bloque=10000, dataFile="definitivo.csv")
 
-# Prueba la construcción del índice
-inverted_index.SPIMIConstruction()
+index = InvertIndex(index_file="spimi.txt")
+index.prueba()
+results = index.prueba2()
 
-# Prueba la fusión de bloques e indexación
-index = inverted_index.index_blocks()
-
-# Escribe el índice en un archivo con TF-IDF
-inverted_index.write_index_tf_idf(index, len(index))
-
-# Opcional: Prueba la recuperación de los documentos más similares
-k = 3
-results = inverted_index.retrieve_k_nearest("Women", k)
-
-# Opcional: Muestra los resultados
 print(results)
