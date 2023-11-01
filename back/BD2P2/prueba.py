@@ -375,14 +375,16 @@ class InvertIndex:
         scores = scores[:k]
 
         temp = []
+        scores_values = []
         for result in scores:
             temp.append(result[0])
+            scores_values.append(result[1])
 
 
         # INDICES para hallar en el dataframe
         matching_indices = data.loc[data["id"].isin(temp)].index
 
-        return matching_indices
+        return matching_indices, scores_values
 
     #PRUEBAS
 
@@ -400,8 +402,7 @@ class InvertIndex:
 
 
 
-index = InvertIndex(index_file="spimi.txt")
-index.prueba()
-results = index.prueba2()
-
-print(results)
+#index = InvertIndex(index_file="spimi.txt")
+#index.prueba()
+#results = index.prueba2()
+#print(results)

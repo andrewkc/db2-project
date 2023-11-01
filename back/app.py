@@ -16,6 +16,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+def create_index():  
+    global index 
+    index = InvertIndex(index_file="spimi.txt")
+    index.prueba()
+
 # Endpoints
 
 @app.post('/')
@@ -23,8 +29,8 @@ async def root():
     return "Hello from FastAPI"
 
 
-@app.post('/get_data_from_postgres')
-async def get_top_k_postgres(data :dict):
+@app.post('/data_from_postgres')
+async def top_k_postgres(data :dict):
     try:
         query = data.get('query')
         k = int(data.get('k')) if data.get('k') != '' else 5
@@ -62,32 +68,28 @@ async def get_top_k_postgres(data :dict):
 
         return {'content': response, 'execution_time': execution_time, 'status_code':200}
     except Exception as e:
-        return JSONResponse(content=e.response["Error"], status_code=500)
+        return JSONResponse(content=str(e), status_code=500)
 
 
-@app.post('/get_data_from_invidx')
-async def get_top_k_invidx(data: dict):
+@app.post('/data_from_invidx')
+async def top_k_invidx(data: dict):
     try:
         query = data.get('query')
         k = int(data.get('k')) if data.get('k') != '' else 5
 
         index = InvertIndex(index_file="spimi.txt")
-        matching_indices = index.retrieve_k_nearest(query, k)
-        data = index.loadData()
-        result = data.iloc[matching_indices]
-        result = result.iloc[:, [0, -1]]
-        result = result.values.tolist()
+        matching_indices, scores = index.retrieve_k_nearest(query, k)
+        df = index.loadData()
+        rows = df.iloc[matching_indices].iloc[:, 2:-2].values.tolist()
+        content = list(map(lambda row: ' '.join(map(str, row)), rows))
+        df = df.iloc[matching_indices].iloc[:, [1, -2]]
+        df['content'] = content
+        df['scores'] = scores
+        df['id'] = df['id'].astype(int)
+        result = df.values.tolist()
 
         return {'content': result, 'status_code':200}
     except Exception as e:
-        return JSONResponse(content=e.response["Error"], status_code=500)
+        return JSONResponse(content=str(e), status_code=500)
 
-
-@app.post('/create_index')
-async def create_index():
-    try:   
-        index = InvertIndex(index_file="spimi.txt")
-        index.prueba()
-        return {'response': 200}
-    except Exception as e:
-        return JSONResponse(content=e.response["Error"], status_code=500)
+create_index()

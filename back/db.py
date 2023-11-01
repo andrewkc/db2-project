@@ -29,7 +29,7 @@ def create_table(tablename):
     cursor.close()
     conn.close()
 
-def insert_products(tablename = 'product'):
+def insert_products(n, tablename = 'product'):
     conn = psycopg2.connect(
         host=getenv("HOST"),
         port=getenv("PORT"),
@@ -42,12 +42,15 @@ def insert_products(tablename = 'product'):
 
     # N = 44425
     df = pd.read_csv('./BD2P2/definitivo.csv')
+    i = 0
     for _, row in df.iterrows():
+        if i == n: break
         id = row.iloc[1]
-        name = str(row.iloc[-2]).lower().replace('\'', '')
-        content = ' '.join(map(lambda x: str(x).lower(), list(row.iloc[2:-2]))).replace('\'', '')
+        name = str(row.iloc[-2]).replace('\'', '\'\'')
+        content = ' '.join(map(lambda x: str(x), list(row.iloc[2:-2]))).replace('\'', '\'\'')
         insert = insert_product(id, name, content, tablename)
         cursor.execute(insert)
+        i = i+1
 
     conn.commit()
     cursor.close()
@@ -75,6 +78,6 @@ def create_index(tablename='product'):
     cursor.close()
     conn.close()
 
-#create_table('product')
-#insert_products('product')
+create_table('product')
+insert_products(44424, 'product')
 create_index('product')
