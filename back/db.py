@@ -29,7 +29,7 @@ def create_table(tablename):
     cursor.close()
     conn.close()
 
-def insert_products(tablename = 'product', n):
+def insert_products(n,tablename = 'product'):
     conn = psycopg2.connect(
         host=getenv("HOST"),
         port=getenv("PORT"),
