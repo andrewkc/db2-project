@@ -1,2 +1,4 @@
 /env
 .env
+__pycache__/
+BD2P2/__pycache__/
