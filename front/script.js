@@ -106,9 +106,9 @@ async function fetchData() {
                     contentElement.textContent = `Contenido: ${content}`;
                     resultItem.appendChild(contentElement);
 
-                    const similitary = document.createElement('p');
-                    similitary.textContent = `Similitary: ${rank}`;
-                    resultItem.appendChild(similitary);
+                    const similitude = document.createElement('p');
+                    similitude.textContent = `Similitud: ${rank}`;
+                    resultItem.appendChild(similitude);
 
                     if (imageMap[id]) {
                         const imageElement = document.createElement('img');
