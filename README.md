@@ -34,7 +34,7 @@ retrieve_k_nearest
 ## 4. Experimentación
 ### Tablas y gráficos de los resultados
 Tiempo de ejecución promedio en ms.
-| N (registros) | MyIndex  | PostgreSQL Index|
+| N (registros) | PostgreSQL Index | MyIndex |
 |-----------|-----------|-----------|
 | 1000   |  1.351 ms   |  141.44 ms |
 | 2000   |  2.664 ms  |  154.774 ms   |
