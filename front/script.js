@@ -98,9 +98,17 @@ async function fetchData() {
                     const resultItem = document.createElement('div');
                     resultItem.className = 'result-item';
 
+                    const nameProduct = document.createElement('p');
+                    nameProduct.textContent = `Nombre: ${name}`;
+                    resultItem.appendChild(nameProduct);
+
                     const contentElement = document.createElement('p');
                     contentElement.textContent = `Contenido: ${content}`;
                     resultItem.appendChild(contentElement);
+
+                    const similitary = document.createElement('p');
+                    similitary.textContent = `Similitary: ${rank}`;
+                    resultItem.appendChild(similitary);
 
                     if (imageMap[id]) {
                         const imageElement = document.createElement('img');

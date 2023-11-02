@@ -366,17 +366,19 @@ class InvertIndex:
         scores = scores[:k]
 
         temp = []
+        scores_values = []
         for result in scores:
             temp.append(result[0])
+            scores_values.append(result[1])
 
 
         # INDICES para hallar en el dataframe
         matching_indices = data.loc[data["id"].isin(temp)].index
         end_time = time.time()
 
-        execution_time = end_time - start_time
+        execution_time = (end_time - start_time) * 1000 # ms
 
-        return matching_indices, execution_time
+        return matching_indices, scores_values, execution_time
 
     #PRUEBAS
 
@@ -388,13 +390,14 @@ class InvertIndex:
 
     def prueba2(self):
         k = 5
-        results,respuesta = self.retrieve_k_nearest("I need shoes blue for men", k)
+        results, respuesta, scores = self.retrieve_k_nearest("I need shoes blue for men", k)
         data = self.loadData()
-        return data.iloc[results], respuesta
+        return data.iloc[results], respuesta, scores
 
 
-
+"""
 index = InvertIndex(index_file="spimi.txt")
 index.prueba()
 results,tiempo = index.prueba2()
 print(results, tiempo)
+"""

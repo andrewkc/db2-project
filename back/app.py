@@ -78,7 +78,7 @@ async def top_k_invidx(data: dict):
         k = int(data.get('k')) if data.get('k') != '' else 5
 
         index = InvertIndex(index_file="spimi.txt")
-        matching_indices, scores = index.retrieve_k_nearest(query, k)
+        matching_indices, scores, execution_time = index.retrieve_k_nearest(query, k)
         df = index.loadData()
         rows = df.iloc[matching_indices].iloc[:, 2:-2].values.tolist()
         content = list(map(lambda row: ' '.join(map(str, row)), rows))
@@ -88,7 +88,7 @@ async def top_k_invidx(data: dict):
         df['id'] = df['id'].astype(int)
         result = df.values.tolist()
 
-        return {'content': result, 'status_code':200}
+        return {'content': result, 'execution_time': f"{execution_time} ms", 'status_code':200}
     except Exception as e:
         return JSONResponse(content=str(e), status_code=500)
 
