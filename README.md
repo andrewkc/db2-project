@@ -21,10 +21,163 @@ Este dataset cuenta con imágenes, múltiples atributos de etiqueta que describe
   
 ## 2. Backend:
 ### Construcción del índice invertido
-retrieve_k_nearest
+* Invert Index
+```python
+class InvertIndex:
+    def __init__(self, index_file, abstracts_por_bloque=10000, dataFile=""):
+        self.index_file = index_file
+        self.index = {}
+        self.idf = {}
+        self.length = {}
+        self.BLOCK_LIMIT = abstracts_por_bloque
+        self.lista_de_bloques = []
+        self.data_path = data_path  # Updated data path
+        self.path_index = path_index  # Updated path to index file
+    ...
+    def SPIMIConstruction(self, n):
+        data = self.loadData().head(n)
+
+        dictTerms = defaultdict(list)
+        block_n = 1
+
+        for idx, row in data.iterrows():
+            if idx % 20000 == 0: print("Estamos en el index ", idx)
+            abstract = row["concatenated"]
+            docID = row["id"]
+            tokensAbstract = preprocesar_textos(abstract)
+            #Crear postingList
+            term_freq = defaultdict(int)
+            for term in tokensAbstract:
+                term_freq[term] += 1
+
+            for term, freq in term_freq.items():
+                if sys.getsizeof(dictTerms) > self.BLOCK_LIMIT:
+                    sorted_block = sorted(dictTerms.items(), key=itemgetter(0))
+                    block_name = "bloque-"+str(block_n)+".txt"
+                    block_path = os.path.join(blocks_dir, block_name)
+                    with open(block_path, "w") as file_part:
+                        json.dump(sorted_block, file_part, indent=2)
+                    sorted_block = {} #clear
+                    block_n += 1
+                    dictTerms = defaultdict(list) #clear
+                dictTerms[term].append((docID, freq))
+
+        if dictTerms:
+            sorted_block = sorted(dictTerms.items(), key=itemgetter(0))
+            block_name = "bloque-"+str(block_n)+".txt"
+            block_path = os.path.join(blocks_dir, block_name)
+            with open(block_path, "w") as file_part:
+                json.dump(sorted_block, file_part, indent=2)
+            dictTerms = defaultdict(list)
+    ...
+```
+* Método para obtener los k vecinos más cercanos
+```python
+
+    def retrieve_k_nearest(self, query, k):
+        start_time = time.time()
+        data = self.loadData()
+        query = preprocesar_textos(query)
+        index_data = self.load_Index()
+        cos_to_evaluar = defaultdict(dict)
+        idf_query=defaultdict(float)
+        query_tfidf = []
+
+        for term in query:
+            term_data = self.binary_search(term, index_data)
+            if term_data is None:
+                continue
+
+            idf_query[term] = round(math.log10((len(data)/len(term_data)) + 1),4)
+
+            for docId_tfidfin in term_data:
+                docId = docId_tfidfin.split(",")[0]
+                tf_idf = docId_tfidfin.split(",")[1]
+                cos_to_evaluar[docId][term] = tf_idf
+                #va guardando en cada doc, el tf idf en orden de los querys keywords
+
+            tf_ = calculate_tf(term, query)
+            idf_ = idf_query[term]
+            query_tfidf.append(tf_*idf_)
+
+        #Crear vectores caracteristicos
+        cosine_docs = defaultdict(list)
+
+        for docId in cos_to_evaluar:
+            for term in query:
+                if term in cos_to_evaluar[docId]:
+                    cosine_docs[docId].append(float(cos_to_evaluar[docId][term]))
+                else:
+                    cosine_docs[docId].append(0)
+
+        scores = self.cos_Similarity(query_tfidf, cosine_docs)
+
+        # Ordenar los documentos por puntuación de similitud de coseno en orden descendente
+        scores = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+        scores = scores[:k]
+
+        temp = []
+        scores_values = []
+        for result in scores:
+            temp.append(result[0])
+            scores_values.append(result[1])
+
+
+        # INDICES para hallar en el dataframe
+        matching_indices = data.loc[data["id"].isin(temp)].index
+        end_time = time.time()
+
+        execution_time = round((end_time - start_time) * 1000, 3) # ms
+
+        return matching_indices, scores_values, execution_time
+```
 ### Manejo de memoria secundaria
-### Ejecución óptima de consultas o Análisis de la maldición de la dimensionalidad y como mitigarlo
-### Incluir imágenes/diagramas para una mejor comprensión.
+* Merge blocks
+```python
+ def merge(self, block1, block2):
+        merge_final = OrderedDict()
+
+        for term, ids in block1.items():
+            if term in merge_final:
+                merge_final[term]+= ids
+            else:
+                merge_final[term] = ids
+
+        for term, ids in block2.items():
+            if term in merge_final:
+                merge_final[term]+= ids
+            else:
+                merge_final[term] = ids
+        bloque_ordenado = OrderedDict(sorted(merge_final.items(), key=lambda x: x[0]))
+        return bloque_ordenado
+```
+* Index blocks
+```python
+#Se encarga de hacer el merge de blocks, e indexar
+    def index_blocks(self):
+        blocks = []
+        files = self.listFiles()
+        for file_path in files:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                block = json.load(file)
+                blocks.append(block)
+
+
+        while 1 < len(blocks):
+            merged_blocks = []
+            for i in range(0,len(blocks), 2):
+                if i+1 <len(blocks): #si ya no hay mas con que agarrar, o sea el ultimo
+                    combinados = self.merge(dict(blocks[i]), dict(blocks[i+1]))
+                    merged_blocks.append(combinados)
+                else:#solo append al final
+                    merged_blocks.append(blocks[i])
+            blocks = merged_blocks #actualiza el nuevo merge
+        ordenar_merge = OrderedDict(sorted(blocks[0].items(), key=lambda x: x[0]))
+
+        return ordenar_merge
+
+```
+![bloques](assets/bloques.png)
 
 ### Diseño del índice con PostgreSQL
 ```python
@@ -55,6 +208,90 @@ def create_index(tablename='product'):
 ![gui](assets/gui.png)
 ![gui2](assets/gui2.png)
 ![gui3](assets/gui3.png)
+* Fetch Data
+```javascript
+async function fetchData() {
+    const query = document.getElementById('queryInput').value;
+    const k = parseInt(document.getElementById('kInput').value);
+    const method = document.getElementById('methodSelector').value;
+
+    if (!query || isNaN(k)) {
+        alert("Por favor, completa todos los campos.");
+        return;
+    }
+
+    const apiUrl = `${BASE_URL}${method}`;
+    const payload = {
+        query: query,
+        k: k
+    };
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            // Control de visibilidad para el tiempo de ejecución
+            const executionTimeContainer = document.getElementById("execution-time-container");
+            if (data.execution_time) {
+                executionTimeContainer.style.display = "block";
+                executionTimeContainer.innerText = `Tiempo de ejecución: ${data.execution_time}`;
+            } else {
+                executionTimeContainer.style.display = "none";
+            }
+
+            // Control de visibilidad para el contenedor de resultados
+            const resultContainer = document.getElementById('resultContainer');
+            if (data.content && data.content.length > 0) {
+                resultContainer.style.display = "block";
+                resultContainer.innerHTML = '';
+
+                data.content.forEach(([id, name, content, rank]) => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+
+                    const nameProduct = document.createElement('p');
+                    nameProduct.textContent = `Nombre: ${name}`;
+                    resultItem.appendChild(nameProduct);
+
+                    const contentElement = document.createElement('p');
+                    contentElement.textContent = `Contenido: ${content}`;
+                    resultItem.appendChild(contentElement);
+
+                    const similitude = document.createElement('p');
+                    similitude.textContent = `Similitud: ${rank}`;
+                    resultItem.appendChild(similitude);
+
+                    if (imageMap[id]) {
+                        const imageElement = document.createElement('img');
+                        imageElement.src = imageMap[id];
+                        imageElement.alt = `Imagen para ID ${id}`;
+                        imageElement.width = 100; // o cualquier otro tamaño que prefieras
+                        resultItem.appendChild(imageElement);
+                    }
+
+                    resultContainer.appendChild(resultItem);
+                });
+
+            } else {
+                resultContainer.style.display = "none";
+            }
+
+        } else {
+            alert('Error al realizar la consulta');
+        }
+    } catch (error) {
+        console.error('Hubo un problema con la operación fetch:', error);
+    }
+}
+```
 
 ## 4. Experimentación
 ### Tablas y gráficos de los resultados
