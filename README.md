@@ -25,11 +25,36 @@ retrieve_k_nearest
 ### Manejo de memoria secundaria
 ### Ejecución óptima de consultas o Análisis de la maldición de la dimensionalidad y como mitigarlo
 ### Incluir imágenes/diagramas para una mejor comprensión.
-
-## 3. Frontend:
+
 ### Diseño del índice con PostgreSQL
-### Análisis comparativo con su propia implementación
-### Screenshots de la GUI o Experimentación
+```python
+def create_index(tablename='product'):
+    conn = psycopg2.connect(
+        host=getenv("HOST"),
+        port=getenv("PORT"),
+        dbname=getenv("DBNAME"),
+        user=getenv("USER"),
+        password=getenv("PASSWORD")
+    )
+
+    cursor = conn.cursor()
+    cursor.execute('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
+
+    cursor.execute(f"ALTER TABLE {tablename} ADD COLUMN indexed tsvector;")
+    cursor.execute(f"""UPDATE {tablename} SET indexed = T.indexed FROM (
+                    SELECT id, setweight(to_tsvector('english', name), 'A') || setweight(to_tsvector('english', content), 'B') AS indexed FROM {tablename}
+                   ) AS T WHERE {tablename}.id = T.id;""")
+    cursor.execute('CREATE INDEX IF NOT EXISTS content_idx_gin ON product USING gin (indexed);')
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+```
+## 3. Frontend:
+### Screenshots de la GUI
+![gui](assets/gui.png)
+![gui2](assets/gui2.png)
+![gui3](assets/gui3.png)
 
 ## 4. Experimentación
 ### Tablas y gráficos de los resultados
@@ -45,6 +70,9 @@ Tiempo de ejecución promedio en ms.
 | 38000   |  39.454 ms|   186.397 ms|
 | 44424   |  45.033 ms |  190.282 ms  |
 
-![ArXiv](assets/comparacion_time.png)
+![comparacion_time](assets/comparacion_time.png)
 
-### Análisis y discusión
+### Conclusión
+* Se realizó un uso de memoria eficiente para la construción del índice invertido
+* Se creo el índice de postgres considerando distintos pesos, se dio más peso al nombre del producto que al contenido (todos los demás campos concatenados).
+* Al realizar la comparación de tiempos de ejecución se evidencio que el índice de postgres es mejor que el nuestro.
