@@ -39,10 +39,12 @@ Tiempo de ejecución promedio en ms.
 | 1000   |  1.351 ms   |  141.44 ms |
 | 2000   |  2.664 ms  |  154.774 ms   |
 | 4000   |  4.060 ms |  162.761 ms |
-| 8000   |  9.645 ms  |  169.53 ms  |
+| 8000   |  9.645 ms  |  169.530 ms  |
 | 16000   | 17.976 ms  | 175.382 ms|
 | 32000   |  34.365 ms |   182.124 ms|
 | 38000   |  39.454 ms|   186.397 ms|
 | 44424   |  45.033 ms |  190.282 ms  |
+
+![ArXiv](assets/comparacion_time.png)
 
 ### Análisis y discusión
