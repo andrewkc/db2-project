@@ -167,8 +167,8 @@ class InvertIndex:
         data["id"] = data["id"].astype(str)
         return data
 
-    def SPIMIConstruction(self):
-        data = self.loadData()
+    def SPIMIConstruction(self, n):
+        data = self.loadData().head(n)
 
         dictTerms = defaultdict(list)
         block_n = 1
@@ -376,15 +376,15 @@ class InvertIndex:
         matching_indices = data.loc[data["id"].isin(temp)].index
         end_time = time.time()
 
-        execution_time = (end_time - start_time) * 1000 # ms
+        execution_time = round((end_time - start_time) * 1000, 3) # ms
 
         return matching_indices, scores_values, execution_time
 
     #PRUEBAS
 
-    def prueba(self):
+    def prueba(self, n):
         #Merge completo
-        self.SPIMIConstruction()
+        self.SPIMIConstruction(n)
         merge_final = self.index_blocks()
         self.write_index_tf_idf(merge_final, len(merge_final))
 

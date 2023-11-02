@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def insert_product(id, name, content, tablename = 'product'):
+def insert_product(id, name, content, tablename = 'public.product'):
     return f"INSERT INTO {tablename}(id, name, content) VALUES ({id}, '{name}', '{content}');"
 
 def create_table(tablename):
@@ -40,7 +40,7 @@ def insert_products(n, tablename = 'product'):
 
     cursor = conn.cursor()
 
-    # N = 44425
+    # N = 44424
     df = pd.read_csv('./BD2P2/definitivo.csv')
     i = 0
     for _, row in df.iterrows():
@@ -78,6 +78,6 @@ def create_index(tablename='product'):
     cursor.close()
     conn.close()
 
-create_table('product')
-insert_products(44424, 'product')
-create_index('product')
+create_table('public.product')
+insert_products(44424, 'public.product')
+create_index('public.product')

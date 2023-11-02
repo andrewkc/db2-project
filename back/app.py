@@ -20,7 +20,7 @@ app.add_middleware(
 def create_index():  
     global index 
     index = InvertIndex(index_file="spimi.txt")
-    index.prueba()
+    index.prueba(44424) # N
 
 # Endpoints
 
