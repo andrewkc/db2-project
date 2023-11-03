@@ -208,6 +208,7 @@ def create_index(tablename='product'):
 ![gui](assets/gui.png)
 ![gui2](assets/gui2.png)
 ![gui3](assets/gui3.png)
+![gui3](assets/inverted.png)
 * Fetch Data
 ```javascript
 async function fetchData() {
